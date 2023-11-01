@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Web3AuthMPCCoreKit, WEB3AUTH_NETWORK, Point, SubVerifierDetailsParams, TssShareType, keyToMnemonic, getWebBrowserFactor, COREKIT_STATUS, TssSecurityQuestion, generateFactorKey } from "@web3auth/mpc-core-kit";
+import { WALLET_ADAPTERS } from "@web3auth/base";
 import Web3 from "web3";
 
 import './App.css';
@@ -39,6 +40,7 @@ const tele = window.Telegram.WebApp;
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
+
   const [backupFactorKey, setBackupFactorKey] = useState(undefined);
   const [provider, setProvider] = useState(null);
   const [web3, setWeb3] = useState(undefined);
@@ -55,6 +57,37 @@ function App() {
   useEffect(() => {
     tele.ready();
   })
+
+  // useEffect(() => {
+  //   const initWeb3Auth = async () => {
+  //     setCoreKitStatus(COREKIT_STATUS.INITIALIZING);
+  //     try {
+  //       const instance = new Web3AuthMPCCoreKit({
+  //         web3AuthClientId: "BDnPNy5W8q-gXF85Gm9iv60uhM2YbwNpKx9OKEySTr17vjAubvmXCLYBHSlsFbLsZyBqcRByyAz-CV1llDIKGQ4",
+  //         web3AuthNetwork: WEB3AUTH_NETWORK.DEVNET,
+  //         uxMode: "popup",
+  //       });
+
+  //       // If initialization includes async methods, call them here and await.
+
+  //       setCoreKitInstance(instance);
+  //       setCoreKitStatus(COREKIT_STATUS.INITIALIZED);
+  //     } catch (error) {
+  //       console.error("Error initializing Web3AuthMPCCoreKit", error);
+  //       setCoreKitStatus(COREKIT_STATUS.ERROR); // Set to error state on failure
+  //     }
+  //   };
+
+  //   initWeb3Auth();
+  // }, []);
+
+  // if (coreKitStatus === COREKIT_STATUS.INITIALIZING || coreKitStatus === COREKIT_STATUS.NOT_INITIALIZED) {
+  //   return <div>Loading...</div>; // Show loading state during initialization
+  // }
+
+  // if (coreKitStatus === COREKIT_STATUS.ERROR) {
+  //   return <div>Error in initialization.</div>; // Show error message if initialization fails
+  // }
 
   useEffect(() => {
     const init = async () => {
@@ -103,16 +136,24 @@ function App() {
       if (!coreKitInstance) {
         throw new Error('initiated to login');
       }
+      // const verifierConfig = {
+      //   subVerifierDetails: {
+      //     typeOfLogin: "google",
+      //     verifier: "w3a-google-demo",
+      //     clientId: "519228911939-cri01h55lsjbsia1k7ll6qpalrus75ps.apps.googleusercontent.com",
+      //   },
+      // };
+
       const verifierConfig = {
         subVerifierDetails: {
-          typeOfLogin: 'jwt',
-          verifier: 'w3a-auth0-demo',
-          clientId: 'hUVVf4SEsZT7syOiL0gLU9hFEtm2gQ6O',
-          jwtParams: {
-            domain: 'https://web3auth.au.auth0.com',
-            // To skip the Auth0 modal, use connection
-            // connection: 'twitter' // name of connection on Auth0 dashboard
-          }
+          typeOfLogin: "discord",
+          verifier: "tg-payments-test",
+          clientId: "1167255642713641041",
+          redirectPathName: "https://fabulous-basbousa-32fa3f.netlify.app/"
+          // jwtParams?: Auth0ClientOptions;
+          // hash?: string;
+          // queryParameters?: TorusGenericObject;
+          // customState?: TorusGenericObject;
         }
       };
 
@@ -511,44 +552,22 @@ function App() {
 
   const unloggedInView = (
     <>
-      <button onClick={() => login()} className="card">
+      <button onClick={() => login()} className="card2">
         Login
       </button>
-      <div className={coreKitStatus === COREKIT_STATUS.REQUIRED_SHARE ? "" : "disabledDiv"}>
-        <button onClick={() => getDeviceShare()} className="card">
-          Get Device Share
-        </button>
-        <label>Backup/ Device factor key:</label>
-        <input value={backupFactorKey} onChange={(e) => setBackupFactorKey(e.target.value)}></input>
-        <button onClick={() => inputBackupFactorKey()} className="card">
-          Input Factor Key
-        </button>
-        <button onClick={criticalResetAccount} className="card">
-          [CRITICAL] Reset Account
-        </button>
-
-        <div className={!question ? "disabledDiv" : ""}>
-          <label>Recover Using Security Answer:</label>
-          <label>{question}</label>
-          <input value={answer} onChange={(e) => setAnswer(e.target.value)}></input>
-          <button onClick={() => recoverSecurityQuestionFactor()} className="card">
-            Recover Using Security Answer
-          </button>
-        </div>
-      </div>
     </>
   );
 
 
   return (
     <>
-      <h1 className="heading">Order Food</h1>
+      {/* <h1 className="heading">Order Food</h1>
       <Cart cartItems={cartItems} onCheckout={onCheckout} />
       <div className="cards__container">
         {foods.map((food) => {
           return <Card food={food} key={food.id} onAdd={onAdd} onRemove={onRemove} />;
         })}
-      </div>
+      </div> */}
 
 
       <div className="container">

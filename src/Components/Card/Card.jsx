@@ -25,7 +25,7 @@ function Card({food, onAdd, onRemove}) {
         </span>
         <div className="image__container">
             <img src={Image} alt={title} />
-            <h4 classname="card__title">
+            <h4 className="card__title">
                 {title} . <span className="card__price">$ {price}</span>
             </h4>
 

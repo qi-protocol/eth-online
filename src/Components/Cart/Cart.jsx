@@ -7,7 +7,7 @@ function Cart({cartItems, onCheckout}) {
     const totalPrice = cartItems.reduce((a, c)=> a + c.price * c.quantity, 0);
 
   return (
-    <div callName="cart_container">
+    <div callname="cart_container">
         {cartItems.length === 0 ? "No items in cart" : ""}
         <br /> <span className="">Total Price: ${totalPrice.toFixed(2)}</span>
         <Button title={`${cartItems.length === 0 ? 'Order !' : 'Checkout'}`}
