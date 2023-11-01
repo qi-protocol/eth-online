@@ -146,16 +146,23 @@ function App() {
 
       const verifierConfig = {
         subVerifierDetails: {
-          typeOfLogin: "discord",
-          verifier: "tg-payments-test",
-          clientId: "1167255642713641041",
-          redirectPathName: "https://fabulous-basbousa-32fa3f.netlify.app/"
+          typeOfLogin: "jwt",
+          verifier: "w3a-auth0",
+          clientId: 'H4m9E5ShNs7cTvhRmWqXpfxmsd6pamRS',
+          jwtParams: {
+            domain: 'https://dev-7wezf7id34vdqtai.us.auth0.com',
+            verifierIdField: "redirect",
+            // To skip the Auth0 modal, use connection
+            // connection: 'twitter' // name of connection on Auth0 dashboard
+
+          }
           // jwtParams?: Auth0ClientOptions;
           // hash?: string;
           // queryParameters?: TorusGenericObject;
           // customState?: TorusGenericObject;
         }
       };
+
 
       await coreKitInstance.loginWithOauth(verifierConfig);
 
@@ -550,6 +557,12 @@ function App() {
     </>
   );
 
+  const loggedInView2 = (
+    <>
+      <a>some shitty logged in</a>
+    </>
+  );
+
   const unloggedInView = (
     <>
       <button onClick={() => login()} className="card2">
@@ -572,7 +585,7 @@ function App() {
 
       <div className="container">
 
-        <div className="grid">{provider ? loggedInView : unloggedInView}</div>
+        <div className="grid">{provider ? loggedInView2 : unloggedInView}</div>
         <div id="console" style={{ whiteSpace: "pre-line" }}>
           <p style={{ whiteSpace: "pre-line" }}></p>
         </div>
