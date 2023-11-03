@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Web3AuthMPCCoreKit, WEB3AUTH_NETWORK, Point, SubVerifierDetailsParams, TssShareType, keyToMnemonic, getWebBrowserFactor, COREKIT_STATUS, TssSecurityQuestion, generateFactorKey } from "@web3auth/mpc-core-kit";
-import { WALLET_ADAPTERS } from "@web3auth/base";
 import Web3 from "web3";
 
 import './App.css';
@@ -8,7 +7,6 @@ import Card from './Components/Card/Card';
 import Cart from './Components/Cart/Cart';
 
 import "./App.css";
-import { SafeEventEmitterProvider } from "@web3auth/base";
 import { BN } from "bn.js";
 
 
@@ -20,8 +18,6 @@ const uiConsole = (...args) => {
   console.log(...args);
 };
 
-
-const selectedNetwork = WEB3AUTH_NETWORK.MAINNET;
 
 const coreKitInstance = new Web3AuthMPCCoreKit({
   web3AuthClientId: "BDnPNy5W8q-gXF85Gm9iv60uhM2YbwNpKx9OKEySTr17vjAubvmXCLYBHSlsFbLsZyBqcRByyAz-CV1llDIKGQ4",
