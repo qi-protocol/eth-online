@@ -11,6 +11,7 @@ import "./App.css";
 import { SafeEventEmitterProvider } from "@web3auth/base";
 import { BN } from "bn.js";
 
+
 const uiConsole = (...args) => {
   const el = document.querySelector("#console>p");
   if (el) {
@@ -26,7 +27,7 @@ const coreKitInstance = new Web3AuthMPCCoreKit({
   web3AuthClientId: "BDnPNy5W8q-gXF85Gm9iv60uhM2YbwNpKx9OKEySTr17vjAubvmXCLYBHSlsFbLsZyBqcRByyAz-CV1llDIKGQ4",
   // Available networks are "sapphire_devnet", "sapphire_mainnet"
   web3AuthNetwork: WEB3AUTH_NETWORK.DEVNET,
-  uxMode: "popup",
+  uxMode: "redirect",
 });
 
 
@@ -40,6 +41,7 @@ const tele = window.Telegram.WebApp;
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
+  const [isRedirected, setIsRedirected] = useState(false);
 
   const [backupFactorKey, setBackupFactorKey] = useState(undefined);
   const [provider, setProvider] = useState(null);
@@ -54,59 +56,59 @@ function App() {
 
   const securityQuestion = new TssSecurityQuestion();
 
+
   useEffect(() => {
     tele.ready();
   })
 
-  // useEffect(() => {
-  //   const initWeb3Auth = async () => {
-  //     setCoreKitStatus(COREKIT_STATUS.INITIALIZING);
-  //     try {
-  //       const instance = new Web3AuthMPCCoreKit({
-  //         web3AuthClientId: "BDnPNy5W8q-gXF85Gm9iv60uhM2YbwNpKx9OKEySTr17vjAubvmXCLYBHSlsFbLsZyBqcRByyAz-CV1llDIKGQ4",
-  //         web3AuthNetwork: WEB3AUTH_NETWORK.DEVNET,
-  //         uxMode: "popup",
-  //       });
-
-  //       // If initialization includes async methods, call them here and await.
-
-  //       setCoreKitInstance(instance);
-  //       setCoreKitStatus(COREKIT_STATUS.INITIALIZED);
-  //     } catch (error) {
-  //       console.error("Error initializing Web3AuthMPCCoreKit", error);
-  //       setCoreKitStatus(COREKIT_STATUS.ERROR); // Set to error state on failure
-  //     }
-  //   };
-
-  //   initWeb3Auth();
-  // }, []);
-
-  // if (coreKitStatus === COREKIT_STATUS.INITIALIZING || coreKitStatus === COREKIT_STATUS.NOT_INITIALIZED) {
-  //   return <div>Loading...</div>; // Show loading state during initialization
-  // }
-
-  // if (coreKitStatus === COREKIT_STATUS.ERROR) {
-  //   return <div>Error in initialization.</div>; // Show error message if initialization fails
-  // }
-
   useEffect(() => {
     const init = async () => {
-      await coreKitInstance.init();
+      try {
+        console.log("Initializing Web3AuthMPCCoreKit...");
+        await coreKitInstance.init();
+        console.log("Initialized Web3AuthMPCCoreKit:", coreKitInstance);
 
-      if (coreKitInstance.provider) {
-        setProvider(coreKitInstance.provider);
+        if (checkRedirect()) {
+          console.log("Detected OAuth redirect parameters in URL. Handling redirect result...");
+          await coreKitInstance.handleRedirectResult();
+          console.log("Redirect result handled.");
+        }
+
+        if (coreKitInstance.provider) {
+          setProvider(coreKitInstance.provider);
+        //   console.log("Set provider:", provider);
+        //   const web3Instance = new Web3(coreKitInstance.provider);
+        //   setWeb3(web3Instance);
+        // } else {
+        //   console.log("Provider is not set after initialization");
+        }
+
+        setCoreKitStatus(coreKitInstance.status);
+      } catch (error) {
+        console.error("Error during Web3AuthMPCCoreKit initialization or handling redirect:", error);
       }
-
-      setCoreKitStatus(coreKitInstance.status);
-
     };
     init();
   }, []);
+
+
+  const checkRedirect = () => {
+    const currentUrl = new URL(window.location.href);
+    const hasAccessToken = currentUrl.hash.includes('access_token');
+    const hasState = currentUrl.hash.includes('state');
+    const hasCode = currentUrl.searchParams.has('code');
+
+    return hasAccessToken || hasState || hasCode;
+  };
+
 
   useEffect(() => {
     if (provider) {
       const web3 = new Web3(provider);
       setWeb3(web3);
+      web3.setProvider(coreKitInstance.provider);
+      console.log("provider: ", provider);
+      console.log("web3: ", web3);
     }
   }, [provider])
 
@@ -151,10 +153,6 @@ function App() {
           clientId: 'H4m9E5ShNs7cTvhRmWqXpfxmsd6pamRS',
           jwtParams: {
             domain: 'https://dev-7wezf7id34vdqtai.us.auth0.com',
-            verifierIdField: "redirect",
-            // To skip the Auth0 modal, use connection
-            // connection: 'twitter' // name of connection on Auth0 dashboard
-
           }
           // jwtParams?: Auth0ClientOptions;
           // hash?: string;
@@ -189,8 +187,12 @@ function App() {
 
       setCoreKitStatus(coreKitInstance.status);
 
+      await coreKitInstance.loginWithOauth(verifierConfig);
+      console.log("Logged in successfully with OAuth.");
+
+      // ... rest of your code ...
     } catch (error) {
-      uiConsole(error);
+      console.error("Error during login:", error);
     }
   }
 
@@ -298,10 +300,18 @@ function App() {
       uiConsole("web3 not initialized yet");
       return;
     }
-    const chainId = await web3.eth.getChainId();
-    uiConsole(chainId);
-    return chainId;
+    try {
+      console.log("web3.currentProvider: ", web3.currentProvider);
+      console.log("web3.eth:", web3.eth);
+      web3.setProvider(provider);
+      const chainId = await web3.eth.getChainId();
+      uiConsole(chainId);
+      return chainId;
+    } catch (error) {
+      uiConsole("Error retrieving chain ID:", error);
+    }
   };
+
 
   const getAccounts = async () => {
     if (!web3) {
@@ -439,118 +449,57 @@ function App() {
     <>
       <h2 className="subtitle">Account Details</h2>
       <div className="flex-container">
-        <button onClick={getUserInfo} className="card">
+        <button onClick={getUserInfo} className="card2">
           Get User Info
         </button>
 
-        <button onClick={async () => uiConsole(await coreKitInstance.getTssPublicKey())} className="card">
+        <button onClick={async () => uiConsole(await coreKitInstance.getTssPublicKey())} className="card2">
           Get Public Key
         </button>
 
-        <button onClick={keyDetails} className="card">
+        <button onClick={keyDetails} className="card2">
           Key Details
         </button>
 
-        <button onClick={listFactors} className="card">
+        <button onClick={listFactors} className="card2">
           List Factors
         </button>
       </div>
       <div className="flex-container">
-        <button onClick={criticalResetAccount} className="card">
+        <button onClick={criticalResetAccount} className="card2">
           [CRITICAL] Reset Account
         </button>
 
-        <button onClick={async () => uiConsole(await coreKitInstance._UNSAFE_exportTssKey())} className="card">
+        <button onClick={async () => uiConsole(await coreKitInstance._UNSAFE_exportTssKey())} className="card2">
           [CAUTION] Export TSS Private Key
         </button>
 
-        <button onClick={logout} className="card">
+        <button onClick={logout} className="card2">
           Log Out
         </button>
       </div>
-      <h2 className="subtitle">Recovery/ Key Manipulation</h2>
       <div>
-        <h4 >Enabling MFA</h4>
-        <div className="flex-container">
-          <button onClick={enableMFA} className="card">
-            Enable MFA
-          </button>
-        </div>
-        <h4 >Manual Factors Manipulation</h4>
-        <div className="flex-container">
-          <label>Share Type:</label>
-          <select value={exportTssShareType} onChange={(e) => setExportTssShareType(parseInt(e.target.value))}>
-            <option value={TssShareType.DEVICE}>Device Share</option>
-            <option value={TssShareType.RECOVERY}>Recovery Share</option>
-          </select>
-          <button onClick={exportFactor} className="card">
-            Export share
-          </button>
-        </div>
-        <div className="flex-container">
-          <label>Factor pub:</label>
-          <input value={factorPubToDelete} onChange={(e) => setFactorPubToDelete(e.target.value)}></input>
-          <button onClick={deleteFactor} className="card">
-            Delete Factor
-          </button>
-        </div>
-        <div className="flex-container">
-          <input value={backupFactorKey} onChange={(e) => setBackupFactorKey(e.target.value)}></input>
-          <button onClick={() => inputBackupFactorKey()} className="card">
-            Input Factor Key
-          </button>
-        </div>
 
-        <h4>Security Question</h4>
-
-        <div>{question}</div>
-        <div className="flex-container">
-          <div className={question ? "disabledDiv" : ""}>
-            <label>Set Security Question:</label>
-            <input value={newQuestion} placeholder="question" onChange={(e) => setNewQuestion(e.target.value)}></input>
-            <input value={answer} placeholder="answer" onChange={(e) => setAnswer(e.target.value)}></input>
-            <button onClick={() => createSecurityQuestion(newQuestion, answer)} className="card">
-              Create Security Question
-            </button>
-          </div>
-
-          <div className={!question ? "disabledDiv" : ""}>
-            <label>Change Security Question:</label>
-            <input value={newQuestion} placeholder="newQuestion" onChange={(e) => setNewQuestion(e.target.value)}></input>
-            <input value={newAnswer} placeholder="newAnswer" onChange={(e) => setNewAnswer(e.target.value)}></input>
-            <input value={answer} placeholder="oldAnswer" onChange={(e) => setAnswer(e.target.value)}></input>
-            <button onClick={() => changeSecurityQuestion(newQuestion, newAnswer, answer)} className="card">
-              Change Security Question
-            </button>
-          </div>
-        </div>
-        <div className="flex-container">
-          <div className={!question ? "disabledDiv" : ""}>
-            <button onClick={() => deleteSecurityQuestion()} className="card">
-              Delete Security Question
-            </button>
-          </div>
-        </div>
       </div>
       <h2 className="subtitle">Blockchain Calls</h2>
       <div className="flex-container">
-        <button onClick={getChainID} className="card">
+        <button onClick={getChainID} className="card2">
           Get Chain ID
         </button>
 
-        <button onClick={getAccounts} className="card">
+        <button onClick={getAccounts} className="card2">
           Get Accounts
         </button>
 
-        <button onClick={getBalance} className="card">
+        <button onClick={getBalance} className="card2">
           Get Balance
         </button>
 
-        <button onClick={signMessage} className="card">
+        <button onClick={signMessage} className="card2">
           Sign Message
         </button>
 
-        <button onClick={sendTransaction} className="card">
+        <button onClick={sendTransaction} className="card2">
           Send Transaction
         </button>
       </div>
@@ -585,7 +534,7 @@ function App() {
 
       <div className="container">
 
-        <div className="grid">{provider ? loggedInView2 : unloggedInView}</div>
+        <div className="grid">{provider ? loggedInView : unloggedInView}</div>
         <div id="console" style={{ whiteSpace: "pre-line" }}>
           <p style={{ whiteSpace: "pre-line" }}></p>
         </div>
